@@ -1,0 +1,4 @@
+.venv/
+.vscode/
+pca-eigenfaces_professor/
+pca-eigenfaces/__pycache__
