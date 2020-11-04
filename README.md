@@ -34,3 +34,7 @@ See more: https://docs.python.org/3/library/venv.html
 - Run:
 
 ```python pca-eigenfaces/main.py```
+
+# References
+
+https://docs.opencv.org/4.4.0/d3/df2/tutorial_py_basic_ops.html
