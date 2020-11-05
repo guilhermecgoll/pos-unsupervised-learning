@@ -1,5 +1,5 @@
 
-class Person():
+class Person:
     id = 0
     label = 0
     data = []
@@ -10,7 +10,4 @@ class Person():
         self.data = data
 
     def toString(self):
-        """
-        docstring
-        """
         return 'Person [id={}, label={}, data={}]'.format(self.id, self.label, self.data)

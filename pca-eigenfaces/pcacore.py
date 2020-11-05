@@ -1,31 +1,72 @@
 from person import Person
+from pcaeigenface import PCAEigenFace
 
+import sys
 from os import listdir
 from os.path import isfile, join
+import random
 
 import numpy as np
 import cv2 as cv
 
 class PcaCore:
 
-    p = 10
+    trainSize = 7 #holdout 70/30
     train = []
     test = []
+
+    startComps = 15
+    maxComps = 15
+
+    minDistance = sys.float_info.max
+    maxDistance = sys.float_info.min
+    meanDistance = 0
+
+    minRec = sys.float_info.max
+    maxRec = sys.float_info.min
+    meanRec = 0
+
+    MAX_DISTANCE = 2500
+    MAX_REC = 2900
 
     def start(self):        
         # pessoa = Person(3, 3, vis)
         path = ".\orl"
-        self._loadDataset(path)
+        self._loadDataset(path, self.trainSize)
+        _startComps = self.startComps
+        while _startComps <= self.maxComps:
+            model = PCAEigenFace(_startComps)
+            model.train(self.train)
+            _startComps += 1
 
     def _sortFunc(self, e):
         return e.id
 
-    def _loadDataset(self, path: str):
+    def _loadDataset(self, path: str, trainSize: int):
         _files = [f for f in listdir(path) if isfile(join(path, f))]
         people = []
         for (_file) in _files:
             people.append(self._toPerson(path, _file))
-        people = people.sort(key=self._sortFunc)
+        people.sort(key=self._sortFunc)
+
+        print('tamanho da lista', len(people))
+
+        numSamplesPerPerson = 10
+        personSamples = []
+        for person in people:
+            personSamples.append(person)
+            if len(personSamples) == numSamplesPerPerson:
+                while len(personSamples) > trainSize:
+                    index = random.randint(0, len(personSamples) - 1)
+                    self.test.append(personSamples[index])
+                    personSamples.pop(index)
+                
+                if trainSize == numSamplesPerPerson:
+                    self.test.extend(personSamples)
+                
+                self.train.extend(personSamples)
+                personSamples.clear()
+
     
     
     def _toPerson(self, path: str, filename: str):
