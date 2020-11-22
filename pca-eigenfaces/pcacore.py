@@ -8,10 +8,12 @@ import random
 
 import numpy as np
 import cv2 as cv
+from skimage.util import img_as_float
+
 
 class PcaCore:
 
-    trainSize = 7 #holdout 70/30
+    trainSize = 7  # holdout 70/30
     train = []
     test = []
 
@@ -29,8 +31,7 @@ class PcaCore:
     MAX_DISTANCE = 2500
     MAX_REC = 2900
 
-    def start(self):        
-        # pessoa = Person(3, 3, vis)
+    def start(self):
         path = ".\orl"
         self._loadDataset(path, self.trainSize)
         _startComps = self.startComps
@@ -60,15 +61,13 @@ class PcaCore:
                     index = random.randint(0, len(personSamples) - 1)
                     self.test.append(personSamples[index])
                     personSamples.pop(index)
-                
+
                 if trainSize == numSamplesPerPerson:
                     self.test.extend(personSamples)
-                
+
                 self.train.extend(personSamples)
                 personSamples.clear()
 
-    
-    
     def _toPerson(self, path: str, filename: str):
         _file = filename.replace(".jpg", "")
         _parts = _file.split(sep='_')
@@ -77,6 +76,15 @@ class PcaCore:
         return person
 
     def _getImageData(self, filename: str):
-        _img = cv.imread(filename)
+        _img = cv.imread(filename, cv.IMREAD_GRAYSCALE)
         _resizedImg = cv.resize(_img, (80, 80))
-        return _resizedImg
+        # converte num vetor coluna de 6400 x 1
+        _resizedImg = _resizedImg.transpose().reshape(-1, 1)
+        # converte a imagem de 8 bits em 64bits
+        novaImagem = img_as_float(_resizedImg)
+        return novaImagem
+
+    def _showImg(self, img):
+        cv.imshow('dst_rt', img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()

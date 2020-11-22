@@ -1,9 +1,11 @@
 import numpy as np
+import cv2 as cv
+
 
 class PCAEigenFace:
 
     numComponents = 0
-    mean = np.zeros((1,1))
+    mean = np.zeros((1, 1))
 
     def __init__(self, numComponents: int):
         self.numComponents = numComponents
@@ -15,22 +17,39 @@ class PCAEigenFace:
         self._calcEigen(train)
         self._calcEigenFaces(train)
         self._calcProjections(train)
-    
+
     def _calcMean(self, train: list):
-        data = train[0].data
-        print(data.shape)
-        num_rows, num_cols, wtf = data.shape
+        sample = train[0].data
+        num_rows, num_cols = sample.shape
         self.mean = np.zeros((num_rows, num_cols))
 
         for person in train:
             _data = person.data
             i = 0
             while i < num_rows:
-                mv = self.mean[i,0:][0]
-                pv = _data[i,0:][0]
-                mv += pv
-                #descobrir como atualizar a matriz
-                self.mean[i,0:] = mv
+                matriz_valores = self.mean[i, 0]
+                person_valores = _data[i, 0]
+                nova_soma = (matriz_valores + person_valores)
+                self.mean[i, 0] = nova_soma
+                i += 1
+
+        i = 0
+        while i < num_rows:
+            matriz_valores = self.mean[i, 0]
+            matriz_valores /= len(train)
+            self.mean[i, 0] = matriz_valores
+            i += 1
+
+        self._saveImage(self.mean, '.\imagemMedia.jpg')
+
+    def _saveImage(self, image, filename: str):
+        destino = np.zeros((image.shape))
+        # Para salvar a imagem é necessário normalizar na escala 64Bits entre 0 e 255 (8 bits)
+        cv.normalize(image, destino, 0, 255, cv.NORM_MINMAX, cv.CV_64FC1)
+        print(image.dtype)
+        print(destino.dtype)
+        destino = destino.reshape(80, 80).transpose()
+        cv.imwrite(filename, destino)
 
     def _calcDiff(self, train: list):
         print('called _calcDiff')
