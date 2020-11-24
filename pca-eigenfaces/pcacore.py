@@ -50,8 +50,6 @@ class PcaCore:
             people.append(self._toPerson(path, _file))
         people.sort(key=self._sortFunc)
 
-        print('tamanho da lista', len(people))
-
         numSamplesPerPerson = 10
         personSamples = []
         for person in people:

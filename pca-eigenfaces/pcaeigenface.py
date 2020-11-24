@@ -6,6 +6,10 @@ class PCAEigenFace:
 
     numComponents = 0
     mean = np.zeros((1, 1))
+    diffs = np.zeros((1, 1))
+    covariance = np.zeros((1, 1))
+    eigenvalues = []
+    eigenvectors = []
 
     def __init__(self, numComponents: int):
         self.numComponents = numComponents
@@ -46,19 +50,37 @@ class PCAEigenFace:
         destino = np.zeros((image.shape))
         # Para salvar a imagem é necessário normalizar na escala 64Bits entre 0 e 255 (8 bits)
         cv.normalize(image, destino, 0, 255, cv.NORM_MINMAX, cv.CV_64FC1)
-        print(image.dtype)
-        print(destino.dtype)
         destino = destino.reshape(80, 80).transpose()
         cv.imwrite(filename, destino)
 
     def _calcDiff(self, train: list):
-        print('called _calcDiff')
+        sample = train[0].data
+        num_rows, num_cols = sample.shape
+        self.diffs = np.zeros((num_rows, len(train)), dtype=sample.dtype)
+        for i, j in enumerate(self.diffs):
+            for k, l in enumerate(j):
+                mv = self.mean[i, 0]
+                data = train[k].data
+                dv = data[i, 0]
+                diff = dv - mv
+                self.diffs[i, k] = diff
 
     def _calcCovariance(self, train: list):
-        print('called _calcCovariance')
+        self.covariance = self._mul(self.diffs.transpose(), self.diffs)
+
+    def _mul(self, matA, matB):
+        num_rowsA, num_colsA = matA.shape
+        num_rowsB, num_colsB = matB.shape
+        d = np.zeros((num_rowsA, num_colsB), dtype=float)
+        c = np.zeros((num_rowsA, num_colsB), dtype=float)
+
+        cv.gemm(matA, matB, 1, d, 1, dst=c)
+        return c
 
     def _calcEigen(self, train: list):
-        print('called _calcEigen')
+        retval, self.eigenvalues, self.eigenvectors = cv.eigen(
+            self.covariance, eigenvalues=None, eigenvectors=None)
+        print(retval, self.eigenvalues, self.eigenvectors)
 
     def _calcEigenFaces(self, train: list):
         print('called _calcEigenFaces')
