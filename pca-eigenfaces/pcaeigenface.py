@@ -8,8 +8,10 @@ class PCAEigenFace:
     mean = np.zeros((1, 1))
     diffs = np.zeros((1, 1))
     covariance = np.zeros((1, 1))
-    eigenvalues = []
-    eigenvectors = []
+    eigenvalues = [0]
+    eigenvectors = [0]
+    labels = [0]
+    projections = [0]
 
     def __init__(self, numComponents: int):
         self.numComponents = numComponents
@@ -80,10 +82,47 @@ class PCAEigenFace:
     def _calcEigen(self, train: list):
         retval, self.eigenvalues, self.eigenvectors = cv.eigen(
             self.covariance, eigenvalues=None, eigenvectors=None)
-        print(retval, self.eigenvalues, self.eigenvectors)
 
     def _calcEigenFaces(self, train: list):
-        print('called _calcEigenFaces')
+        evt = self.eigenvectors.transpose()
+        rows, cols = evt.shape
+        components = cols
+        if self.numComponents > 0:
+            components = self.numComponents
+        ev_k = evt[:, 0:components]
+
+        # Mat ev_k = evt.colRange(0, numComponents > 0 ? numComponents : evt.cols());
+        # for (int j = 0; j < ev_k.cols(); j++) {
+        # 	evt.col(j).copyTo(ev_k.col(j));
+        # }
+
+        self.eigenFaces = self._mul(self.diffs, ev_k)
+        rows, cols = self.eigenFaces.shape
+        i = 0
+        while i < (cols - 1):
+            ef = self.eigenFaces[:, i:1]
+        # 	Normalização L2 = Yi = Xi / sqrt(sum((Xi)^2)), onde i = 0...rows-1
+            cv.normalize(ef, ef)
+            i += 1
 
     def _calcProjections(self, train: list):
-        print('called _calcProjections')
+        self.labels = []
+        self.projections = np.zeros(
+            (self.numComponents, len(train)), dtype=float)
+        rows, cols = self.diffs.shape
+        print('São', cols, 'colunas')
+        print('O array tem', len(train), 'posições')
+        print('Labels', len(self.labels))
+        i = 0
+        while i < (cols - 1):
+            diff = self.diffs[:, i:1]
+            w = self._mul(self.eigenFaces.transpose(), diff)
+            self.projections[:, i:1] = w
+            self.labels[i] = train[i].label
+            i += 1
+        # for (int j = 0; j < diffs.cols(); j++) {
+        # 	Mat diff = diffs.col(j);
+        # 	Mat w = mul(eigenFaces.t(), diff);
+        # 	w.copyTo(projections.col(j));
+        # 	labels[j] = train.get(j).getLabel();
+        # }
