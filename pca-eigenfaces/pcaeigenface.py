@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+from math import sqrt
 
 
 class PCAEigenFace:
@@ -8,10 +9,10 @@ class PCAEigenFace:
     mean = np.zeros((1, 1))
     diffs = np.zeros((1, 1))
     covariance = np.zeros((1, 1))
-    eigenvalues = [0]
-    eigenvectors = [0]
-    labels = [0]
-    projections = [0]
+    eigenvalues = []
+    eigenvectors = []
+    labels = []
+    projections = []
 
     def __init__(self, numComponents: int):
         self.numComponents = numComponents
@@ -89,12 +90,7 @@ class PCAEigenFace:
         components = cols
         if self.numComponents > 0:
             components = self.numComponents
-        ev_k = evt[:, 0:components]
-
-        # Mat ev_k = evt.colRange(0, numComponents > 0 ? numComponents : evt.cols());
-        # for (int j = 0; j < ev_k.cols(); j++) {
-        # 	evt.col(j).copyTo(ev_k.col(j));
-        # }
+        ev_k = np.copy(evt[:, 0:components])
 
         self.eigenFaces = self._mul(self.diffs, ev_k)
         rows, cols = self.eigenFaces.shape
@@ -106,23 +102,63 @@ class PCAEigenFace:
             i += 1
 
     def _calcProjections(self, train: list):
-        self.labels = []
         self.projections = np.zeros(
             (self.numComponents, len(train)), dtype=float)
         rows, cols = self.diffs.shape
-        print('São', cols, 'colunas')
-        print('O array tem', len(train), 'posições')
-        print('Labels', len(self.labels))
         i = 0
         while i < (cols - 1):
             diff = self.diffs[:, i:1]
             w = self._mul(self.eigenFaces.transpose(), diff)
             self.projections[:, i:1] = w
-            self.labels[i] = train[i].label
+            self.labels.insert(i, train[i].label)
             i += 1
-        # for (int j = 0; j < diffs.cols(); j++) {
-        # 	Mat diff = diffs.col(j);
-        # 	Mat w = mul(eigenFaces.t(), diff);
-        # 	w.copyTo(projections.col(j));
-        # 	labels[j] = train.get(j).getLabel();
-        # }
+
+    def predict(self, testData: list, label: list, confidence: list, reconstructionError: list):
+        diff = np.zeros(())
+        diff = cv.subtract(testData, self.mean, diff)
+        print(diff.shape)
+
+        # Calcula os pesos da imagem desconhecida.
+        w = self._mul(self.eigenFaces.transpose(), diff)
+
+        # Calcular o vizinho mais próximo dessa projeção 'desconhecida'
+        minJ = 0
+        minDistance = self._calcDistance(w, self.projections[:, minJ:1])
+        j = 1
+        rows, cols = self.projections.shape
+        while j < (cols - 1):
+            distance = self._calcDistance(w, self.projections[:, j:1])
+            if (distance < minDistance):
+                minDistance = distance
+                minJ = j
+            j += 1
+
+        label[0] = self.labels[minJ]
+        confidence[0] = minDistance
+
+        reconstruction = self._calcReconstruction(w)
+        reconstructionError[0] = cv.norm(testData, reconstruction, cv.NORM_L2)
+        self._saveImage(testData, '.\itestData.jpg')
+        self._saveImage(reconstruction, '.\ireconstruction.jpg')
+
+    def _calcDistance(self, p, q):
+        # Distância euclidiana:
+        # d = sqrt(sum(pi - qi)^2)
+        distance = 0
+        i = 0
+        rows, cols = p.shape
+        while i < (cols - 1):
+            pi = p[i, 0]
+            qi = q[i, 0]
+            d = pi - qi
+            distance += d * d
+            i += 1
+
+        result = sqrt(distance)
+        return result
+
+    def _calcReconstruction(self, w):
+        result = self._mul(self.eigenFaces, w)
+        cv.add(result, self.mean, result)
+
+        return result
