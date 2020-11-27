@@ -52,7 +52,7 @@ See more: https://docs.python.org/3/library/venv.html
 19 componentes principais, acurácia: 96.7479674796748%
 20 componentes principais, acurácia: 96.7479674796748%
 ```
-
+![Saída do console](https://raw.githubusercontent.com/guilhermecgoll/pos-unsupervised-learning/main/output.jpg?raw=true)
 
 # Referências
 
