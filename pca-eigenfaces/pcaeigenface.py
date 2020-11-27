@@ -95,8 +95,8 @@ class PCAEigenFace:
         self.eigenFaces = self._mul(self.diffs, ev_k)
         rows, cols = self.eigenFaces.shape
         i = 0
-        while i < (cols - 1):
-            ef = self.eigenFaces[:, i:1]
+        while i < cols:
+            ef = self.eigenFaces[:, i: i + 1]
         # 	Normalização L2 = Yi = Xi / sqrt(sum((Xi)^2)), onde i = 0...rows-1
             cv.normalize(ef, ef)
             i += 1
@@ -106,17 +106,16 @@ class PCAEigenFace:
             (self.numComponents, len(train)), dtype=float)
         rows, cols = self.diffs.shape
         i = 0
-        while i < (cols - 1):
-            diff = self.diffs[:, i:1]
+        while i < cols:
+            diff = self.diffs[:, i: i + 1]
             w = self._mul(self.eigenFaces.transpose(), diff)
-            self.projections[:, i:1] = w
+            self.projections[:, i: i + 1] = w
             self.labels.insert(i, train[i].label)
             i += 1
 
     def predict(self, testData: list, label: list, confidence: list, reconstructionError: list):
         diff = np.zeros(())
         diff = cv.subtract(testData, self.mean, diff)
-        print(diff.shape)
 
         # Calcula os pesos da imagem desconhecida.
         w = self._mul(self.eigenFaces.transpose(), diff)
@@ -126,28 +125,31 @@ class PCAEigenFace:
         minDistance = self._calcDistance(w, self.projections[:, minJ:1])
         j = 1
         rows, cols = self.projections.shape
-        while j < (cols - 1):
-            distance = self._calcDistance(w, self.projections[:, j:1])
+        while j < cols:
+            distance = self._calcDistance(w, self.projections[:, j: j + 1])
             if (distance < minDistance):
                 minDistance = distance
                 minJ = j
             j += 1
 
-        label[0] = self.labels[minJ]
-        confidence[0] = minDistance
+        label.insert(0, self.labels[minJ])
+        confidence.insert(0, minDistance)
 
         reconstruction = self._calcReconstruction(w)
-        reconstructionError[0] = cv.norm(testData, reconstruction, cv.NORM_L2)
+        reconstructionError.insert(0, cv.norm(
+            testData, reconstruction, cv.NORM_L2))
         self._saveImage(testData, '.\itestData.jpg')
         self._saveImage(reconstruction, '.\ireconstruction.jpg')
 
     def _calcDistance(self, p, q):
         # Distância euclidiana:
         # d = sqrt(sum(pi - qi)^2)
+
         distance = 0
         i = 0
         rows, cols = p.shape
-        while i < (cols - 1):
+
+        while i < (rows - 1):
             pi = p[i, 0]
             qi = q[i, 0]
             d = pi - qi
